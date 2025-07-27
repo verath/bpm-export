@@ -14,7 +14,7 @@ To use this application, you need to configure Spotify API credentials:
 
 1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 2. Create a new application
-3. Add your redirect URI (e.g., `http://localhost:5173` for development)
+3. Add your redirect URI (e.g., `http://127.0.0.1:5173` for development)
 4. Copy your Client ID
 
 Create a `.env` file in the root directory with:
