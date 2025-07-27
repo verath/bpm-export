@@ -1,30 +1,18 @@
 import { useState, useEffect } from 'react'
 import { SpotifyLogin } from './components/SpotifyLogin'
 import { PlaylistSelection } from './components/PlaylistSelection'
-import { SpotifyAPI } from './utils/spotify'
+import { SpotifyAPI, type SpotifyTokenData } from './utils/spotify'
+import { UserProvider } from './contexts/UserContext'
 
 type AppState = 'login' | 'playlists' | 'export'
 
-function App() {
-  const [appState, setAppState] = useState<AppState>('login')
+interface AuthenticatedAppProps {
+  onLogout: () => void
+}
+
+function AuthenticatedApp({ onLogout }: AuthenticatedAppProps) {
+  const [appState, setAppState] = useState<AppState>('playlists')
   const [selectedPlaylist, setSelectedPlaylist] = useState<{ id: string; name: string } | null>(null)
-
-  // Check if user is already authenticated on app load
-  useEffect(() => {
-    if (SpotifyAPI.isAuthenticated()) {
-      setAppState('playlists')
-    }
-  }, [])
-
-  const handleLoginSuccess = (accessToken: string) => {
-    console.log('Successfully logged in to Spotify!')
-    setAppState('playlists')
-  }
-
-  const handleLoginError = (error: string) => {
-    console.error('Spotify login error:', error)
-    // Error is already displayed in the SpotifyLogin component
-  }
 
   const handlePlaylistSelect = (playlistId: string, playlistName: string) => {
     setSelectedPlaylist({ id: playlistId, name: playlistName })
@@ -33,25 +21,12 @@ function App() {
     console.log(`Selected playlist: ${playlistName} (${playlistId})`)
   }
 
-  const handleLogout = () => {
-    SpotifyAPI.logout()
-    setAppState('login')
-    setSelectedPlaylist(null)
-  }
-
   return (
     <div className="App" style={{ minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif' }}>
-      {appState === 'login' && (
-        <SpotifyLogin 
-          onLoginSuccess={handleLoginSuccess}
-          onLoginError={handleLoginError}
-        />
-      )}
-      
       {appState === 'playlists' && (
         <PlaylistSelection
           onPlaylistSelect={handlePlaylistSelect}
-          onLogout={handleLogout}
+          onLogout={onLogout}
         />
       )}
       
@@ -95,6 +70,48 @@ function App() {
             Back to Playlists
           </button>
         </div>
+      )}
+    </div>
+  )
+}
+
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  // Check if user is already authenticated on app load
+  useEffect(() => {
+    if (SpotifyAPI.isAuthenticated()) {
+      setIsAuthenticated(true)
+    }
+  }, [])
+
+  const handleLoginSuccess = (tokenData: SpotifyTokenData) => {
+    SpotifyAPI.setTokenData(tokenData)
+    console.log('Successfully logged in to Spotify!')
+    setIsAuthenticated(true)
+  }
+
+  const handleLoginError = (error: string) => {
+    console.error('Spotify login error:', error)
+    // Error is already displayed in the SpotifyLogin component
+  }
+
+  const handleLogout = () => {
+    SpotifyAPI.logout()
+    setIsAuthenticated(false)
+  }
+
+  return (
+    <div className="App" style={{ minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif' }}>
+      {!isAuthenticated ? (
+        <SpotifyLogin 
+          onLoginSuccess={handleLoginSuccess}
+          onLoginError={handleLoginError}
+        />
+      ) : (
+        <UserProvider>
+          <AuthenticatedApp onLogout={handleLogout} />
+        </UserProvider>
       )}
     </div>
   )

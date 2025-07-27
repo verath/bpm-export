@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { SpotifyAPI } from '../utils/spotify'
+import { useUser } from '../contexts/UserContext'
 import sanitizeHtml from 'sanitize-html'
 import './PlaylistSelection.css'
 
@@ -18,10 +19,9 @@ interface PlaylistSelectionProps {
   onLogout?: () => void
 }
 
-// Cache interface for storing playlists and user data
+// Cache interface for storing playlists data
 interface PlaylistCache {
   playlists: Playlist[]
-  user: any
   timestamp: number
   expiresAt: number
 }
@@ -30,8 +30,7 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
+  const { user } = useUser()
 
   // Cache duration in milliseconds
   const CACHE_DURATION = 60 * 60 * 1000
@@ -58,11 +57,10 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
     }
   }
 
-  const setCachedData = (playlists: Playlist[], user: any) => {
+  const setCachedData = (playlists: Playlist[]) => {
     try {
       const cache: PlaylistCache = {
         playlists,
-        user,
         timestamp: Date.now(),
         expiresAt: Date.now() + CACHE_DURATION
       }
@@ -78,59 +76,33 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
 
   useEffect(() => {
     // Check cache immediately and set state if available
+    const abortController = new AbortController()
     const cachedData = getCachedData()
     if (cachedData) {
       console.log('Loading playlists from cache')
-      setUser(cachedData.user)
       setPlaylists(cachedData.playlists)
       setIsLoading(false)
     } else {
-      loadUserAndPlaylists()
+        loadAllPlaylists(abortController.signal)
     }
-    
-    // Cleanup function to abort requests when component unmounts
+
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
+        abortController.abort()
     }
   }, [])
 
-  const loadUserAndPlaylists = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      // Create a new AbortController for this request
-      abortControllerRef.current = new AbortController()
-      const signal = abortControllerRef.current.signal
-
-      // Load user profile first
-      const userProfile = await SpotifyAPI.getCurrentUser(signal)
-      setUser(userProfile)
-
-      // Load all playlists
-      await loadAllPlaylists(signal)
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        return
-      }
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load data from Spotify'
-      setError(errorMessage)
-      console.error('Error loading data from Spotify:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const loadAllPlaylists = async (signal: AbortSignal) => {
+  const loadAllPlaylists = async (signal?: AbortSignal) => {
+    console.log('Loading playlists')
+    setIsLoading(true)
+    setError(null)
+    
     const limit = 50
     let allPlaylists: Playlist[] = []
     let currentOffset = 0
     let hasMore = true
 
-    while (hasMore) {
-      try {
+    try {
+      while (hasMore) {
         const playlistsResponse = await SpotifyAPI.getUserPlaylists(limit, currentOffset, signal) as any
         
         allPlaylists = [...allPlaylists, ...playlistsResponse.items]
@@ -139,18 +111,23 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
         // Check if we've loaded all playlists
         hasMore = allPlaylists.length < playlistsResponse.total
         currentOffset += limit
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return
-        }
-        console.error('Error loading playlists at offset', currentOffset, err)
-        break
       }
-    }
 
-    // Cache the loaded data
-    if (allPlaylists.length > 0 && user) {
-      setCachedData(allPlaylists, user)
+      // Cache the loaded data
+      if (allPlaylists.length > 0) {
+        setCachedData(allPlaylists)
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.log('Playlists loading aborted')
+        return
+      }
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load playlists'
+      setError(errorMessage)
+      console.error('Error loading playlists:', err)
+    } finally {
+      console.log('Playlists loading finished')
+      setIsLoading(false)
     }
   }
 
@@ -165,7 +142,7 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
 
   const handleRefresh = () => {
     clearCache()
-    loadUserAndPlaylists()
+    loadAllPlaylists()
   }
 
   const getPlaylistImage = (playlist: Playlist) => {
@@ -206,7 +183,7 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
         <div className="error-container">
           <h2>Error Loading Data from Spotify</h2>
           <p>{error}</p>
-          <button onClick={loadUserAndPlaylists} className="retry-button">
+          <button onClick={() => loadAllPlaylists(new AbortController().signal)} className="retry-button">
             Try Again
           </button>
         </div>

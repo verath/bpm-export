@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import './SpotifyLogin.css'
 import { generateCodeVerifier, generateCodeChallenge } from '../utils/pkce'
+import type { SpotifyTokenData } from '../utils/spotify'
 
 interface SpotifyLoginProps {
-  onLoginSuccess?: (accessToken: string) => void
+  onLoginSuccess?: (tokenData: SpotifyTokenData) => void
   onLoginError?: (error: string) => void
 }
 
@@ -122,14 +123,13 @@ export function SpotifyLogin({ onLoginSuccess, onLoginError }: SpotifyLoginProps
           refresh_token: tokenData.refresh_token
         }
         
-        localStorage.setItem('spotify_token_data', JSON.stringify(tokenInfo))
         localStorage.removeItem('spotify_auth_state')
         localStorage.removeItem('spotify_code_verifier')
         
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname)
         
-        onLoginSuccess?.(tokenData.access_token)
+        onLoginSuccess?.(tokenInfo)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to complete authentication'
         setError(errorMessage)

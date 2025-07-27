@@ -1,13 +1,15 @@
-interface SpotifyTokenData {
+export interface SpotifyTokenData {
   access_token: string
   token_type: string
   expires_in: number
   expires_at: number
 }
 
+const TOKEN_DATA_KEY = 'spotify_token_data'
+
 export class SpotifyAPI {
   private static getTokenData(): SpotifyTokenData | null {
-    const tokenData = localStorage.getItem('spotify_token_data')
+    const tokenData = localStorage.getItem(TOKEN_DATA_KEY)
     if (!tokenData) return null
     
     try {
@@ -15,13 +17,14 @@ export class SpotifyAPI {
       
       // Check if token is expired
       if (Date.now() > parsed.expires_at) {
-        localStorage.removeItem('spotify_token_data')
+        localStorage.removeItem(TOKEN_DATA_KEY)
         return null
       }
       
       return parsed
-    } catch {
-      localStorage.removeItem('spotify_token_data')
+    } catch (err) {
+      console.error('Error parsing token data:', err)
+      localStorage.removeItem(TOKEN_DATA_KEY)
       return null
     }
   }
@@ -31,13 +34,16 @@ export class SpotifyAPI {
     return tokenData?.access_token || null
   }
 
+  static setTokenData(tokenData: SpotifyTokenData): void {
+    localStorage.setItem(TOKEN_DATA_KEY, JSON.stringify(tokenData))
+  }
+
   static isAuthenticated(): boolean {
     return this.getAccessToken() !== null
   }
 
   static logout(): void {
-    localStorage.removeItem('spotify_token_data')
-    localStorage.removeItem('spotify_auth_state')
+    localStorage.removeItem(TOKEN_DATA_KEY)
   }
 
   static async makeRequest<T>(endpoint: string, options: RequestInit = {}, signal?: AbortSignal): Promise<T> {
