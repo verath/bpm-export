@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { SpotifyAPI } from '../utils/spotify'
 import { useUser } from '../contexts/UserContext'
 import sanitizeHtml from 'sanitize-html'
@@ -10,7 +10,7 @@ interface Playlist {
   description: string | null
   images: Array<{ url: string; width: number; height: number }>
   tracks: { total: number }
-  owner: { display_name: string }
+  owner: { display_name: string, id: string }
   public: boolean
 }
 
@@ -31,6 +31,19 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { user } = useUser()
+
+  const sortedPlaylists = useMemo(() => {
+    return playlists.sort((a, b) => {
+      // First sort by owner
+      const aIsCurrentUser = a.owner.id === user?.id
+      const bIsCurrentUser = b.owner.id === user?.id
+      if (aIsCurrentUser && !bIsCurrentUser) return -1
+      if (!aIsCurrentUser && bIsCurrentUser) return 1
+
+      // Then sort by name
+      return a.name.localeCompare(b.name)
+    })
+  }, [playlists, user])
 
   // Cache duration in milliseconds
   const CACHE_DURATION = 60 * 60 * 1000
@@ -231,7 +244,7 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
         ) : (
           <>
             <div className="playlists-grid">
-              {playlists.map((playlist) => (
+              {sortedPlaylists.map((playlist) => (
                 <div 
                   key={playlist.id} 
                   className="playlist-card"
