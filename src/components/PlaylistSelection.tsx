@@ -18,6 +18,14 @@ interface PlaylistSelectionProps {
   onLogout?: () => void
 }
 
+// Cache interface for storing playlists and user data
+interface PlaylistCache {
+  playlists: Playlist[]
+  user: any
+  timestamp: number
+  expiresAt: number
+}
+
 export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelectionProps) {
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -25,8 +33,60 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
   const [user, setUser] = useState<any>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
+  // Cache duration in milliseconds
+  const CACHE_DURATION = 60 * 60 * 1000
+
+  // Cache utility functions
+  const getCachedData = (): PlaylistCache | null => {
+    try {
+      const cached = localStorage.getItem('spotify_playlists_cache')
+      if (!cached) return null
+      
+      const cache: PlaylistCache = JSON.parse(cached)
+      
+      // Check if cache is still valid
+      if (Date.now() > cache.expiresAt) {
+        localStorage.removeItem('spotify_playlists_cache')
+        return null
+      }
+      
+      return cache
+    } catch (error) {
+      console.error('Error loading cached data', error)
+      localStorage.removeItem('spotify_playlists_cache')
+      return null
+    }
+  }
+
+  const setCachedData = (playlists: Playlist[], user: any) => {
+    try {
+      const cache: PlaylistCache = {
+        playlists,
+        user,
+        timestamp: Date.now(),
+        expiresAt: Date.now() + CACHE_DURATION
+      }
+      localStorage.setItem('spotify_playlists_cache', JSON.stringify(cache))
+    } catch (error) {
+      console.warn('Failed to cache playlists:', error)
+    }
+  }
+
+  const clearCache = () => {
+    localStorage.removeItem('spotify_playlists_cache')
+  }
+
   useEffect(() => {
-    loadUserAndPlaylists()
+    // Check cache immediately and set state if available
+    const cachedData = getCachedData()
+    if (cachedData) {
+      console.log('Loading playlists from cache')
+      setUser(cachedData.user)
+      setPlaylists(cachedData.playlists)
+      setIsLoading(false)
+    } else {
+      loadUserAndPlaylists()
+    }
     
     // Cleanup function to abort requests when component unmounts
     return () => {
@@ -87,6 +147,11 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
         break
       }
     }
+
+    // Cache the loaded data
+    if (allPlaylists.length > 0 && user) {
+      setCachedData(allPlaylists, user)
+    }
   }
 
   const handlePlaylistSelect = (playlist: Playlist) => {
@@ -94,7 +159,13 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
   }
 
   const handleLogout = () => {
+    clearCache()
     onLogout?.()
+  }
+
+  const handleRefresh = () => {
+    clearCache()
+    loadUserAndPlaylists()
   }
 
   const getPlaylistImage = (playlist: Playlist) => {
@@ -161,13 +232,20 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
             </>
           )}
         </div>
-        <button onClick={handleLogout} className="logout-button">
-          Logout
-        </button>
+        <div className="header-actions">
+          <button onClick={handleRefresh} className="refresh-button">
+            Refresh
+          </button>
+          <button onClick={handleLogout} className="logout-button">
+            Logout
+          </button>
+        </div>
       </div>
 
       <div className="playlists-container">
-        <h2>Your Playlists</h2>
+        <div className="playlists-header">
+          <h2>Your Playlists</h2>
+        </div>
         
         {playlists.length === 0 ? (
           <div className="no-playlists">
