@@ -6,6 +6,19 @@ A client-side only React app developed using Cursor, to try some AI programming.
 
 **Note**: The export features doesn't actually work, since Spotify has deprecated its audio-features API... :upside_down_face:
 
+**Note2**: Spotify does not allow non-organizations to apply for moving App Status from "Development mode". In "Development mode" only explicitly allowed users can access the app.
+
+## Screenshots
+
+### Login Screen
+![Login Screen](images/index.png)
+
+### Playlist Selection
+![Playlist Selection](images/PlaylistSelect.png)
+
+### Export View
+![Export View](images/Export.png)
+
 ## Setup
 
 ### Spotify API Configuration
