@@ -30,10 +30,19 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const { user } = useUser()
 
   const sortedPlaylists = useMemo(() => {
-    return playlists.sort((a, b) => {
+    // First filter by search query
+    const filteredPlaylists = searchQuery.trim() === '' 
+      ? playlists 
+      : playlists.filter(playlist => 
+          playlist.name.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+
+    // Then sort by owner and name
+    return filteredPlaylists.sort((a, b) => {
       // First sort by owner
       const aIsCurrentUser = a.owner.id === user?.id
       const bIsCurrentUser = b.owner.id === user?.id
@@ -43,7 +52,7 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
       // Then sort by name
       return a.name.localeCompare(b.name)
     })
-  }, [playlists, user])
+  }, [playlists, user, searchQuery])
 
   // Cache duration in milliseconds
   const CACHE_DURATION = 60 * 60 * 1000
@@ -229,6 +238,27 @@ export function PlaylistSelection({ onPlaylistSelect, onLogout }: PlaylistSelect
           <button onClick={handleLogout} className="logout-button">
             Logout
           </button>
+        </div>
+      </div>
+
+      <div className="search-container">
+        <div className="search-input-wrapper">
+          <input
+            type="text"
+            placeholder="Search playlist name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="clear-search-button"
+              aria-label="Clear search"
+            >
+              ×
+            </button>
+          )}
         </div>
       </div>
 

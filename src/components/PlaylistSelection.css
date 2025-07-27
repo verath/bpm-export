@@ -83,6 +83,74 @@
   transform: translateY(-2px);
 }
 
+.search-container {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 40px 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  font-size: 16px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  background: #f8f9fa;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #1DB954;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.1);
+}
+
+.search-input::placeholder {
+  color: #999;
+}
+
+.clear-search-button {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.clear-search-button:hover {
+  background: #c82333;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.search-results {
+  margin: 10px 0 0 0;
+  font-size: 14px;
+  color: #666;
+  font-style: italic;
+}
+
 .playlists-container {
   background: white;
   border-radius: 20px;
@@ -303,7 +371,23 @@
   .playlist-selection {
     padding: 10px;
   }
-  
+
+  .search-container {
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+
+  .search-input {
+    font-size: 14px;
+    padding: 10px 35px 10px 12px;
+  }
+
+  .clear-search-button {
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+  }
+
   .header {
     flex-direction: column;
     gap: 20px;
