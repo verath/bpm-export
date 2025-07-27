@@ -1,0 +1,19 @@
+{
+  "name": "bpm-export",
+  "version": "1.0.0",
+  "description": "Export BPM information for Spotify playlists",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/verath/bpm-export.git"
+  },
+  "author": "Peter Eliasson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/verath/bpm-export/issues"
+  },
+  "homepage": "https://github.com/verath/bpm-export#readme"
+}
