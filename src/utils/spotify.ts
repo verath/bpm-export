@@ -5,6 +5,30 @@ export interface SpotifyTokenData {
   expires_at: number
 }
 
+// Event system for authentication state changes
+type AuthStateListener = () => void
+
+class AuthEventManager {
+  private static listeners: AuthStateListener[] = []
+
+  static addListener(listener: AuthStateListener) {
+    this.listeners.push(listener)
+  }
+
+  static removeListener(listener: AuthStateListener) {
+    const index = this.listeners.indexOf(listener)
+    if (index > -1) {
+      this.listeners.splice(index, 1)
+    }
+  }
+
+  static notifyAuthFailure() {
+    this.listeners.forEach(listener => listener())
+  }
+}
+
+export { AuthEventManager }
+
 const TOKEN_DATA_KEY = 'spotify_token_data'
 
 export class SpotifyAPI {
@@ -66,6 +90,7 @@ export class SpotifyAPI {
       if (response.status === 401) {
         // Token expired or invalid
         this.logout()
+        AuthEventManager.notifyAuthFailure()
         throw new Error('Authentication expired. Please log in again.')
       }
       throw new Error(`Spotify API error: ${response.status} ${response.statusText}`)

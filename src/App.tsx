@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { SpotifyLogin } from './components/SpotifyLogin'
 import { PlaylistSelection } from './components/PlaylistSelection'
-import { SpotifyAPI, type SpotifyTokenData } from './utils/spotify'
+import { SpotifyAPI, type SpotifyTokenData, AuthEventManager } from './utils/spotify'
 import { UserProvider } from './contexts/UserContext'
 
 type AppState = 'login' | 'playlists' | 'export'
@@ -78,10 +78,24 @@ function AuthenticatedApp({ onLogout }: AuthenticatedAppProps) {
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
+  // Handle authentication failures
+  const handleAuthFailure = () => {
+    console.log('Authentication failed, redirecting to login')
+    setIsAuthenticated(false)
+  }
+
   // Check if user is already authenticated on app load
   useEffect(() => {
     if (SpotifyAPI.isAuthenticated()) {
       setIsAuthenticated(true)
+    }
+  }, [])
+
+  // Listen for authentication failures
+  useEffect(() => {
+    AuthEventManager.addListener(handleAuthFailure)
+    return () => {
+      AuthEventManager.removeListener(handleAuthFailure)
     }
   }, [])
 
