@@ -1,6 +1,10 @@
 # BPM Export
 
-Exports BPM information from Spotify playlists using client-side OAuth authentication.
+Exports BPM information from Spotify playlists.
+
+A client-side only React app developed using Cursor, to try some AI programming. Very amazing.
+
+**Note**: The export features doesn't actually work, since Spotify has deprecated its audio-features API... :upside_down_face:
 
 ## Setup
 
